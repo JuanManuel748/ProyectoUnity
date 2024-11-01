@@ -5,16 +5,18 @@ using UnityEngine.InputSystem;
 
 public class PlayerMovement : MonoBehaviour
 {
-	public Rigidbody2D rb;
+    public Rigidbody2D rb;
     public Animator animator;
     bool isFacingRight = true;
     
     [Header("Movement")]
-	public float moveSpeed = 5f;
-	float horizontalMovement;
+    public float moveSpeed = 5f;
+    float horizontalMovement;
 
     [Header("Jumping")]
     public float jumpPower = 10f;
+    private int jumpCount = 0;
+    private int maxJumps = 1; // Permitir doble salto
     
     [Header("GroundCheck")]
     public Transform groundCheckPos;
@@ -34,26 +36,29 @@ public class PlayerMovement : MonoBehaviour
         flip();
         animator.SetFloat("yVelocity", rb.velocity.y);
         animator.SetFloat("magnitude", rb.velocity.magnitude);
+
+        if (isGrounded()) {
+            jumpCount = 0; // Resetear el contador de saltos al tocar el suelo
+        }
     }
-	
-	public void Move(InputAction.CallbackContext context) {
-		horizontalMovement = context.ReadValue<Vector2>().x;
-	}
+    
+    public void Move(InputAction.CallbackContext context) {
+        horizontalMovement = context.ReadValue<Vector2>().x;
+    }
 
     public void Jump(InputAction.CallbackContext context) {
-		if (isGrounded()) {
-            if (context.performed) {
-                rb.velocity=new Vector2(rb.velocity.x, jumpPower);
-                animator.SetTrigger("jump");
-            }
-		}
+        if (context.performed && jumpCount < maxJumps) {
+            rb.velocity = new Vector2(rb.velocity.x, jumpPower);
+            animator.SetTrigger("jump");
+            jumpCount++;
+        }
     }
 
     private bool isGrounded() {
         if (Physics2D.OverlapBox(groundCheckPos.position, groundCheckSize, 0, groundLayer)) {
             return true;
         }
-		return false;
+        return false;
     }
 
     private void OnDrawGizmosSelected() {
