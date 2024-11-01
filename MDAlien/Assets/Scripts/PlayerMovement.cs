@@ -22,6 +22,11 @@ public class PlayerMovement : MonoBehaviour
     public Transform groundCheckPos;
     public Vector2 groundCheckSize = new Vector2 (0.5f, 0.05f);
     public LayerMask groundLayer;
+
+    [Header("Attacking")]
+    public Transform AttackCheck;
+    public Vector2 AttackSize = new Vector2 (0.5f, 0.05f);
+    public LayerMask Enemy;
     
     // Start is called before the first frame update
     void Start()
@@ -54,6 +59,19 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+    public void Attack(InputAction.CallbackContext context) {
+        animator.SetTrigger("Attack");
+        Hit(AttackCheck, AttackSize);
+    }
+
+    private void Hit(Transform tr, Vector2 v2) {
+        Collider2D[] objectsHited = Physics2D.OverlapBoxAll(tr.position, v2, 0, Enemy);
+
+        if (objectsHited.Length > 0 ) {
+            Debug.Log("Hited");
+        }
+    }
+
     private bool isGrounded() {
         if (Physics2D.OverlapBox(groundCheckPos.position, groundCheckSize, 0, groundLayer)) {
             return true;
@@ -62,8 +80,9 @@ public class PlayerMovement : MonoBehaviour
     }
 
     private void OnDrawGizmosSelected() {
-        Gizmos.color = Color.white;
+        Gizmos.color = Color.red;
         Gizmos.DrawWireCube(groundCheckPos.position, groundCheckSize);
+        Gizmos.DrawWireCube(AttackCheck.position, AttackSize);
     }
 
     void flip() {
