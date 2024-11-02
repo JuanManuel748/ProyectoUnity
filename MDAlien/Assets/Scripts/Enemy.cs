@@ -4,49 +4,49 @@ using UnityEngine;
 
 public class Enemy : MonoBehaviour
 {
-    [Header("Patrolling")]
-    public GameObject patrolLeftPoint;
-    public GameObject patrolRightPoint;
-    public float patrolSpeed = 2f;
-    private Rigidbody2D rb;
-    private Transform patrolTargetPoint;
+    [Header("Objects")]
+    public Rigidbody2D rb;
+
+    [Header("Stats")]
+    public float health;
+    public float recoilLength;
+    public float recoilFactor;
+    public bool isRecoiling = false;
+
+    
+
+
+    private float recoilTimer;
 
     // Start is called before the first frame update
     void Start()
     {
-        patrolTargetPoint = patrolRightPoint.transform;
-        rb = GetComponent<Rigidbody2D>();
+        
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (patrolTargetPoint == patrolRightPoint.transform) {
-            rb.velocity = new Vector2(patrolSpeed, 0);
-        } else {
-            rb.velocity = new Vector2(-patrolSpeed, 0);
+        if(health<= 0) {
+            Destroy(gameObject);
         }
-        if (Vector2.Distance(transform.position, patrolTargetPoint.position) < 0.5f) {
-            if (patrolTargetPoint == patrolRightPoint.transform) {
-                patrolTargetPoint = patrolLeftPoint.transform;
-                Flip();
+
+        if (isRecoiling) {
+            if (recoilTimer < recoilLength) {
+                recoilTimer += Time.deltaTime;
             } else {
-                patrolTargetPoint = patrolRightPoint.transform;
-                Flip();
+                isRecoiling = false;
+                recoilTimer = 0;
             }
         }
     }
 
-    private void Flip()
-    {
-        Vector3 localScale = transform.localScale;
-        localScale.x *= -1;
-        transform.localScale = localScale;
-    }
+    public void EnemyHit(float _damageDone, Vector2 _hitDirection, float _hitforce) {
+    health -= _damageDone; 
 
-    private void OnDrawGizmos() {
-        Gizmos.DrawWireSphere(patrolLeftPoint.transform.position, 0.5f);
-        Gizmos.DrawWireSphere(patrolRightPoint.transform.position, 0.5f);
-        Gizmos.DrawLine(patrolLeftPoint.transform.position, patrolRightPoint.transform.position);
+    if (!isRecoiling) {
+        rb.AddForce(-_hitforce * recoilFactor * _hitDirection.normalized, ForceMode2D.Impulse);
+        isRecoiling = true; 
     }
+}
 }

@@ -27,6 +27,7 @@ public class PlayerMovement : MonoBehaviour
     public Transform AttackCheck;
     public Vector2 AttackSize = new Vector2 (0.5f, 0.05f);
     public LayerMask Enemy;
+    public float BetweenAttack, SinceAttack, AttackPower;
     
     // Start is called before the first frame update
     void Start()
@@ -37,6 +38,7 @@ public class PlayerMovement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        SinceAttack += Time.deltaTime;
         rb.velocity = new Vector2(horizontalMovement * moveSpeed, rb.velocity.y);
         flip();
         animator.SetFloat("yVelocity", rb.velocity.y);
@@ -60,8 +62,13 @@ public class PlayerMovement : MonoBehaviour
     }
 
     public void Attack(InputAction.CallbackContext context) {
-        animator.SetTrigger("Attack");
-        Hit(AttackCheck, AttackSize);
+        
+        if (SinceAttack > BetweenAttack) {
+            animator.SetTrigger("Attack");
+            SinceAttack = 0;
+            Hit(AttackCheck, AttackSize);
+        }
+        
     }
 
     private void Hit(Transform tr, Vector2 v2) {
@@ -69,6 +76,12 @@ public class PlayerMovement : MonoBehaviour
 
         if (objectsHited.Length > 0 ) {
             Debug.Log("Hited");
+        }
+
+        for(int i = 0; i < objectsHited.Length; i++) {
+            if(objectsHited[i].GetComponent<Enemy>() != null) {
+                objectsHited[i].GetComponent<Enemy>().EnemyHit(AttackPower, (transform.position - objectsHited[i].transform.position).normalized, 3);
+            }
         }
     }
 
