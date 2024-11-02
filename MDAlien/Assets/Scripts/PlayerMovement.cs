@@ -10,7 +10,7 @@ public class PlayerMovement : MonoBehaviour
     private Animator anim;
     public float walkSpeed = 10f;
     public float jumpForce = 10f;
-    private float xAxis;
+    private float xAxis, yAxis;
 
     [Header("Jumping")]
     private int jumpBuffer = 0;
@@ -27,6 +27,16 @@ public class PlayerMovement : MonoBehaviour
     private bool canDash = true;
     private bool isDashing = false;
 
+    [Header("Attacking")]
+    public float damagePower = 10f;
+    public float attackCooldown = 1f;
+    public float attackTime = 0f;
+    public Transform SideAttackTransform, UpAttackTransform, DownAttackTransform;   
+    public Vector2 SideAttackArea, UpAttackArea, DownAttackArea;
+    public LayerMask attackLayer;
+
+
+
     [Header("Ground Check")]
     [SerializeField] private Transform groundCheck; 
     [SerializeField] private float groundCheckY = 0.2f; 
@@ -35,6 +45,7 @@ public class PlayerMovement : MonoBehaviour
 
     private bool isGrounded;
     private bool isJumping; 
+    private bool isAttacking;
     private float gravity;
     private PlayerStateList pstate;
 
@@ -56,17 +67,30 @@ public class PlayerMovement : MonoBehaviour
         CheckGround();
         Jump();
         Flip();
+        Attack();
         
-        anim.SetBool("jumping", isJumping);
-        // Actualizar animaciones
+        anim.SetBool("jumping", rb.velocity.y > 0.1 && !isGrounded);
         anim.SetBool("falling", !isGrounded && rb.velocity.y < 0);
+    }
+
+    
+    public void OnDrawGizmos()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawRay(groundCheck.position, Vector2.down * groundCheckY);
+        Gizmos.DrawRay(groundCheck.position + new Vector3(groundCheckX, 0f, 0f), Vector2.down * groundCheckY);
+        Gizmos.DrawRay(groundCheck.position + new Vector3(-groundCheckX, 0f, 0f), Vector2.down * groundCheckY);
+
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireCube(SideAttackTransform.position, SideAttackArea);
+        Gizmos.DrawWireCube(UpAttackTransform.position, UpAttackArea);
+        Gizmos.DrawWireCube(DownAttackTransform.position, DownAttackArea);
     }
 
     public void GetInputs()
     {
         xAxis = Input.GetAxisRaw("Horizontal");
-
-        // Llamar a StartDash para verificar si se inicia un dash
+        yAxis = Input.GetAxisRaw("Vertical");
         StartDash();
     }
 
@@ -107,11 +131,10 @@ public class PlayerMovement : MonoBehaviour
             if (isGrounded || (airJumpCounter < airJumpMax))
             {
                 rb.velocity = new Vector2(rb.velocity.x, jumpForce);
-                pstate.jumping = true;
                 isJumping = true; // Marcamos que está saltando
+                pstate.jumping = true;
                 jumpBuffer = 0; // Reiniciar el buffer después de usarlo
                 if (!isGrounded) airJumpCounter++; // Contar el salto aéreo
-                if (rb.velocity.y < 0) isJumping = false;
             }
         }
     }
@@ -155,11 +178,49 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    public void OnDrawGizmos()
+
+    void Attack()
     {
-        Gizmos.color = Color.red;
-        Gizmos.DrawRay(groundCheck.position, Vector2.down * groundCheckY);
-        Gizmos.DrawRay(groundCheck.position + new Vector3(groundCheckX, 0f, 0f), Vector2.down * groundCheckY);
-        Gizmos.DrawRay(groundCheck.position + new Vector3(-groundCheckX, 0f, 0f), Vector2.down * groundCheckY);
+        attackTime += Time.deltaTime;
+        if (Input.GetButtonDown("Fire1") && attackTime >= attackCooldown)
+        {
+            attackTime = 0;
+            isAttacking = true;
+            anim.SetTrigger("attacking");
+
+            if (xAxis == 0 || yAxis < 0 && isGrounded)
+            {
+                Hit(SideAttackTransform, SideAttackArea);
+            }
+            else if (yAxis > 0)
+            {
+                Hit(UpAttackTransform, UpAttackArea);
+            }
+            else if (yAxis < 0 && !isGrounded)
+            {
+                Hit(DownAttackTransform, DownAttackArea);
+            }
+        }
     }
+
+    public void Hit(Transform _attackTransform, Vector2 _attackArea)
+    {
+        Collider2D[] objectsHited = Physics2D.OverlapBoxAll(_attackTransform.position, _attackArea, 0, attackLayer);
+
+        if (objectsHited.Length > 0)
+        {
+           Debug.Log("Hited: " + objectsHited.Length + " objects");
+        }
+
+        for (int i = 0; i < objectsHited.Length; i++)
+        {
+            if (objectsHited[i].GetComponent<Enemy>() != null) 
+            {
+                objectsHited[i].GetComponent<Enemy>().EnemyHited(damagePower);
+
+            }
+        }
+    }
+
+
 }
