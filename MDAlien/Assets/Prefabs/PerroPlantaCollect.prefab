@@ -333,6 +333,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe6f0e0fbb1e0024180908244eb5de67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  health: 0
+  speed: 0
 --- !u!95 &666998795609501879
 Animator:
   serializedVersion: 5
@@ -585,6 +587,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe6f0e0fbb1e0024180908244eb5de67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  health: 0
+  speed: 0
 --- !u!95 &2260384710884402341
 Animator:
   serializedVersion: 5
@@ -837,6 +841,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe6f0e0fbb1e0024180908244eb5de67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  health: 0
+  speed: 0
 --- !u!95 &5395238013189103124
 Animator:
   serializedVersion: 5
@@ -1207,6 +1213,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe6f0e0fbb1e0024180908244eb5de67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  health: 0
+  speed: 0
 --- !u!95 &2798634394502186204
 Animator:
   serializedVersion: 5
