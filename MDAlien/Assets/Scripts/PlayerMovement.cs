@@ -30,10 +30,16 @@ public class PlayerMovement : MonoBehaviour
     [Header("Attacking")]
     public float damagePower = 10f;
     public float attackCooldown = 1f;
+    private float recoilForce = 6f;
     public float attackTime = 0f;
     public Transform SideAttackTransform, UpAttackTransform, DownAttackTransform;   
     public Vector2 SideAttackArea, UpAttackArea, DownAttackArea;
     public LayerMask attackLayer;
+    public GameObject SlashEffect;
+
+    [Header("Health")]
+    public float maxHealth = 3f;
+    private float health;
 
 
 
@@ -44,9 +50,12 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private LayerMask groundLayer; 
 
     private bool isGrounded;
+    public bool tieneLlave;
     private bool isJumping; 
     private bool isAttacking;
     private float gravity;
+    public bool facingRight;
+    public bool isInvincible;
     private PlayerStateList pstate;
 
     void Start()
@@ -55,6 +64,8 @@ public class PlayerMovement : MonoBehaviour
         anim = GetComponent<Animator>();
         pstate = GetComponent<PlayerStateList>();
         gravity = rb.gravityScale;
+        health = maxHealth;
+        tieneLlave = false;
     }
 
     void Update() 
@@ -99,10 +110,12 @@ public class PlayerMovement : MonoBehaviour
         if (xAxis > 0)
         {
             transform.localScale = new Vector2(2.5f, transform.localScale.y);
+            facingRight = true;
         }
         else if (xAxis < 0)
         {
             transform.localScale = new Vector2(-2.5f, transform.localScale.y); 
+            facingRight = false;
         }
     }
 
@@ -179,48 +192,164 @@ public class PlayerMovement : MonoBehaviour
     }
 
 
+    
     void Attack()
     {
         attackTime += Time.deltaTime;
-        if (Input.GetButtonDown("Fire1") && attackTime >= attackCooldown)
+
+        // Verifica si el jugador puede atacar y no está en medio de un ataque
+        if (Input.GetButtonDown("Fire1") && attackTime >= attackCooldown && !isAttacking)
         {
+            bool animated = false;
             attackTime = 0;
-            isAttacking = true;
+            isAttacking = true; // Indica que el jugador está atacando
             anim.SetTrigger("attacking");
 
-            if (xAxis == 0 || yAxis < 0 && isGrounded)
-            {
-                Hit(SideAttackTransform, SideAttackArea);
-            }
-            else if (yAxis > 0)
+            // Ataque lateral
+            
+            // Ataque hacia arriba
+            if (yAxis > 0 && !animated) 
             {
                 Hit(UpAttackTransform, UpAttackArea);
+                SlashEffectAngle(SlashEffect, 90, UpAttackTransform);
+                animated = true;
             }
-            else if (yAxis < 0 && !isGrounded)
+
+            // Ataque hacia abajo
+            if (yAxis < 0 && !isGrounded && !animated) 
             {
                 Hit(DownAttackTransform, DownAttackArea);
+                SlashEffectAngle(SlashEffect, -90, DownAttackTransform);
+                animated = true;
             }
+
+            if (xAxis <= 0 && !animated) 
+            {
+                Hit(SideAttackTransform, SideAttackArea);
+                SlashEffectAngle(SlashEffect, 0, SideAttackTransform);
+                animated = true;
+            }
+
+            // Ataque lateral
+            if (xAxis >= 0 && !animated) 
+            {
+                Hit(SideAttackTransform, SideAttackArea);
+                SlashEffectAngle(SlashEffect, 180, SideAttackTransform);
+                animated = true;
+            }
+
+
+            // Reiniciar isAttacking después del tiempo de ataque (puedes ajustar esto si es necesario)
+            StartCoroutine(ResetAttack());
         }
     }
+
+    private IEnumerator ResetAttack()
+    {
+        // Espera un tiempo que sea igual a la duración del ataque
+        yield return new WaitForSeconds(attackCooldown);
+        isAttacking = false; // Permite que el jugador ataque de nuevo
+    }
+
+
+
 
     public void Hit(Transform _attackTransform, Vector2 _attackArea)
     {
         Collider2D[] objectsHited = Physics2D.OverlapBoxAll(_attackTransform.position, _attackArea, 0, attackLayer);
 
-        if (objectsHited.Length > 0)
-        {
-           Debug.Log("Hited: " + objectsHited.Length + " objects");
-        }
+        
 
-        for (int i = 0; i < objectsHited.Length; i++)
+        foreach (Collider2D obj in objectsHited)
         {
-            if (objectsHited[i].GetComponent<Enemy>() != null) 
+            // Asegúrate de que el objeto tenga el componente Enemy antes de intentar acceder a él
+            Enemy enemy = obj.GetComponent<Enemy>();
+            Debug.Log(obj.name + "hited");
+            if (enemy != null)
             {
-                objectsHited[i].GetComponent<Enemy>().EnemyHited(damagePower);
-
+                Vector2 _direction = new Vector2(transform.position.x - obj.transform.position.x, 0).normalized;
+                enemy.EnemyHit(damagePower, _direction);
             }
         }
     }
 
+
+    private void SlashEffectAngle(GameObject _slash, int _angle, Transform _attackTransform)
+    {
+        // Instancia el efecto de "slash"
+        GameObject slashInstance = Instantiate(_slash, _attackTransform.position, Quaternion.Euler(0, 0, _angle));
+
+        // Ajusta la escala del efecto para que ocupe todo el transform
+        float attackWidth = (_attackTransform.localScale.x) * 0.4f;
+        float attackHeight = (_attackTransform.localScale.y) * 0.4f;
+
+        // Ajusta la dirección del slash según la orientación del personaje
+        if (facingRight)
+        {
+            // Si está mirando a la derecha, mantén la escala positiva
+            slashInstance.transform.localScale = new Vector3(attackWidth, attackHeight, 1);
+        }
+        else
+        {
+            // Si está mirando a la izquierda, invierte la escala en el eje X
+            slashInstance.transform.localScale = new Vector3(-attackWidth, attackHeight, 1);
+        }
+
+        // Rotación adicional para ataques hacia arriba y hacia abajo
+        if (_angle == 90) // Ataque hacia arriba
+        {
+            slashInstance.transform.rotation = Quaternion.Euler(0, 0, 90);
+        }
+        else if (_angle == -90) // Ataque hacia abajo
+        {
+            slashInstance.transform.rotation = Quaternion.Euler(0, 0, -90);
+        }
+    }
+
+
+    public void Hurt(float _damage, Vector2 _direction)
+    {
+        if (!isInvincible)
+        {
+            isInvincible = true;
+            health -= _damage;
+            anim.SetTrigger("hurt");
+            Vector2 rebote = new Vector2(transform.position.x - _direction.x, 0.2f).normalized;
+            rb.AddForce(rebote * recoilForce, ForceMode2D.Impulse);
+            if (health <= 0)
+            {
+                Die();
+            }
+            // despues de 2 segundos poner invincible a false
+           Invincible();
+
+        }
+    }
+
+    IEnumerator Invincible()
+    {
+        yield return new WaitForSeconds(2);
+        isInvincible = false;
+    }
+
+    private void Die()
+    {
+        anim.SetTrigger("death");
+        Destroy(gameObject, anim.GetCurrentAnimatorStateInfo(0).length);
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.gameObject.CompareTag("Llave"))
+        {
+            tieneLlave = true;
+            Destroy(collision.gameObject);
+        }
+    }
+
+    public bool TieneLlave()
+    {
+        return tieneLlave;
+    }
 
 }
