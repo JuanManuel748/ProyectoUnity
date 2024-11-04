@@ -94,6 +94,22 @@ public class Enemy : MonoBehaviour
         {
             rb.velocity = Vector2.zero;
 
+            Collider2D[] objectsHited = Physics2D.OverlapBoxAll(transform.position, transform.localScale, 0, LayerMask.GetMask("Player"));
+
+            if (objectsHited.Length > 0)
+            {
+                PlayerMovement player = objectsHited[0].GetComponent<PlayerMovement>(); // Use objectsHited to find player
+                if (player != null)
+                {
+                    Debug.Log(this + " hited the player");
+                    anim.SetTrigger("attack");
+                    Vector2 _direction = (transform.position - player.transform.position).normalized;
+                    player.Hurt(damagePower, _direction);
+                }
+            }
+
+
+            /*
             if (Physics2D.OverlapCircle(transform.position, attackRange, LayerMask.GetMask("Player")))
             {
                 PlayerMovement player = objective.GetComponent<PlayerMovement>(); // Use objective to find player
@@ -105,6 +121,7 @@ public class Enemy : MonoBehaviour
                     player.Hurt(damagePower, _direction);
                 }
             }
+            /**/
         }
     }
 }
