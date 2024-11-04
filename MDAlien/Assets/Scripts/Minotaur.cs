@@ -64,11 +64,6 @@ public class Minotaur : Enemy
         playerInDashArea = Physics2D.OverlapBoxAll(dashAreaTransform.position, dashAreaVector, 0, LayerMask.GetMask("Player")).Length > 0;
         playerInAttackArea = Physics2D.OverlapBoxAll(attackAreaTransform.position, attackAreaVector, 0, LayerMask.GetMask("Player")).Length > 0;
 
-        // Verificar si se puede atacar
-        if (sinceAttack >= attackCooldown && !isAttacking)
-        {
-            Attack(); // Llamar al método Attack si no está atacando
-        }
     }
 
 
@@ -160,7 +155,8 @@ public class Minotaur : Enemy
 
     private void NormalAttack()
     {
-        
+        if (playerInAttackArea && !isAttacking)
+        {
             isAttacking = true; // Marcar como atacando
             anim.SetTrigger("spin");
 
@@ -169,7 +165,7 @@ public class Minotaur : Enemy
                 objective.GetComponent<PlayerMovement>().Hurt(damagePower, _direction);
             }
             StartCoroutine(attackCooldownIE());
-        
+        }
     }
 
     private IEnumerator attackCooldownIE()
@@ -202,7 +198,7 @@ public class Minotaur : Enemy
 
     protected override void Attack()
     {
-        int attackType = Choose(0, 100, 0); // Elegir tipo de ataque
+        int attackType = Choose(50, 30, 20); // Elegir tipo de ataque
 
         switch (attackType)
         {
