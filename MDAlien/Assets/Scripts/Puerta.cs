@@ -3,12 +3,20 @@ using UnityEngine.SceneManagement;
 
 public class Puerta : MonoBehaviour
 {
-    public bool tieneLlave = false;
-    private bool jugadorEnRango = false;
+    public bool tieneLlave;
+    private bool jugadorEnRango;
+    private Animator anim;
+
+    void Start()
+    {
+        anim = GetComponent<Animator>();
+        tieneLlave = false;
+        jugadorEnRango = false;
+    }
 
     void Update()
     {
-        if (jugadorEnRango && Input.GetKeyDown(KeyCode.W) && tieneLlave)
+        if (jugadorEnRango && Input.GetKeyDown(KeyCode.E) && tieneLlave)
         {
             AbrirPuerta();
         }
@@ -32,7 +40,8 @@ public class Puerta : MonoBehaviour
 
     private void AbrirPuerta()
     {
+        anim.SetTrigger("open");
         // Aquí puedes agregar animación de abrir puerta si es necesario
-        SceneManager.LoadScene("GameOver");
+        SceneManager.LoadScene("Game Over");
     }
 }

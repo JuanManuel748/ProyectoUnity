@@ -312,6 +312,7 @@ public class PlayerMovement : MonoBehaviour
         if (!isInvincible)
         {
             isInvincible = true;
+            Debug.Log("Player hurted");
             health -= _damage;
             anim.SetTrigger("hurt");
             Vector2 rebote = new Vector2(transform.position.x - _direction.x, 0.2f).normalized;
@@ -321,7 +322,7 @@ public class PlayerMovement : MonoBehaviour
                 Die();
             }
             // despues de 2 segundos poner invincible a false
-           Invincible();
+            StartCoroutine(Invincible());
 
         }
     }
@@ -340,7 +341,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.gameObject.CompareTag("Llave"))
+        if (collision.gameObject.CompareTag("Key"))
         {
             tieneLlave = true;
             Destroy(collision.gameObject);
