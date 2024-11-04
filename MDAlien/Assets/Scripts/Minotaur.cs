@@ -71,6 +71,7 @@ public class Minotaur : Enemy
         }
     }
 
+
     public override void OnDrawGizmos()
     {
         base.OnDrawGizmos();
@@ -99,18 +100,31 @@ public class Minotaur : Enemy
     {
         if (sinceJump >= jumpCoolDown && !isAttacking)
         {
-            isAttacking = true; // Marcar como atacando
-            anim.SetTrigger("jump");
-            sinceJump = 0;
-            rb.velocity = new Vector2(rb.velocity.x, jumpForce);
-            
-            if (Physics2D.OverlapBoxAll(jumpAreaTransform.position, jumpAreaVector, 0, LayerMask.GetMask("Player")).Length > 0) {
-                Vector2 _direction = (objective.transform.position - transform.position).normalized;
-                objective.GetComponent<PlayerMovement>().Hurt(damagePower, _direction);
-            }
-            StartCoroutine(attackCooldownIE());
+            StartCoroutine(jump());
         }       
     }
+
+    private IEnumerator jump()
+    {
+        isAttacking = true; // Marcar como atacando
+        sinceJump = 0;
+        rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+
+        // Esperar hasta que la velocidad en Y sea menor a 0 (comienza a caer)
+        yield return new WaitUntil(() => rb.velocity.y < 0);
+        yield return new WaitForSeconds(0.5f);
+        yield return new WaitUntil(() => Physics2D.OverlapBoxAll(jumpAreaTransform.position, jumpAreaVector, 0, LayerMask.GetMask("Ground")).Length > 0);
+        anim.SetTrigger("jump");
+
+        // Chequear si hay algún objeto del jugador en el área de ataque
+        if (Physics2D.OverlapBoxAll(jumpAreaTransform.position, jumpAreaVector, 0, LayerMask.GetMask("Player")).Length > 0) {
+            Vector2 _direction = (objective.transform.position - transform.position).normalized;
+            objective.GetComponent<PlayerMovement>().Hurt(damagePower, _direction);
+        }
+        
+        StartCoroutine(attackCooldownIE());
+    }
+
 
     private void DashAttack()
     {
@@ -188,7 +202,7 @@ public class Minotaur : Enemy
 
     protected override void Attack()
     {
-        int attackType = Choose(40, 40, 20); // Elegir tipo de ataque
+        int attackType = Choose(0, 100, 0); // Elegir tipo de ataque
 
         switch (attackType)
         {
