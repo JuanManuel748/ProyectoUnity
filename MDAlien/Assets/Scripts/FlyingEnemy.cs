@@ -55,6 +55,6 @@ public class FlyingEnemy : Enemy
     protected override void Follow()
     {
         transform.position = Vector2.MoveTowards(transform.position, objective.position, speed * Time.deltaTime);
-        transform.localScale = new Vector3(distance < 0 ? 1 : -1, 1, 1); // Flip sprite direction
+        transform.localScale = new Vector3(absoluteDistanceX < 0 ? 1 : -1, 1, 1); // Flip sprite direction
     }
 }

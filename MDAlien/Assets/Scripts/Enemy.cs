@@ -9,13 +9,14 @@ public class Enemy : MonoBehaviour
     protected float health;
     public float speed;
     public float damagePower;
-    public float range = 20f;
+    public float rangeX = 20f;
+    public float rangeY = 10;
 
     public Transform objective;
     protected bool follow;
     public bool isInvincible;
-    protected float distance;
-    protected float absoluteDistance;
+    protected float absoluteDistanceX;
+    protected float absoluteDistanceY;
     public float recoilForce = 6f;
 
     protected Rigidbody2D rb;
@@ -46,10 +47,10 @@ public class Enemy : MonoBehaviour
         sinceAttack += Time.deltaTime;
         if (objective == null) return; // Null check for objective
 
-        distance = objective.position.x - transform.position.x;
-        absoluteDistance = Mathf.Abs(distance);
+        absoluteDistanceX = Mathf.Abs(objective.position.x - transform.position.x);
+        absoluteDistanceY = Mathf.Abs(objective.position.y - transform.position.y);
 
-        follow = absoluteDistance < range;
+        follow = (absoluteDistanceX < rangeX) && (absoluteDistanceY < rangeY);
 
         if (follow)
         {
@@ -66,7 +67,8 @@ public class Enemy : MonoBehaviour
     protected virtual void Follow()
     {
         anim.SetBool("running", true);
-        transform.position = Vector2.MoveTowards(transform.position, objective.position, speed * Time.deltaTime);
+        Vector2 tempV = new Vector2(objective.position.x, transform.position.y);
+        transform.position = Vector2.MoveTowards(transform.position, tempV, speed * Time.deltaTime);
         
     }
 
@@ -122,7 +124,11 @@ public class Enemy : MonoBehaviour
     public virtual void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, range);
+        //Gizmos.DrawWireSphere(transform.position, rangeX);
+        Gizmos.DrawWireCube(transform.position, new Vector3(rangeX, rangeY, 0));
+        
+        //Gizmos.color = Color.blue;
+        //Gizmos.DrawWireSphere(transform.position, rangeY);
         
         Gizmos.color = Color.yellow;
         if (attackAreaTransform != null)
@@ -136,7 +142,7 @@ public class Enemy : MonoBehaviour
         if (sinceAttack >= attackCooldown)
         {
             sinceAttack = 0f; // Reset cooldown timer
-            if (absoluteDistance < attackAreaVector.x) // Check horizontal distance as basic range check
+            if (absoluteDistanceX < attackAreaVector.x) // Check horizontal distance as basic range check
             {
                 rb.velocity = Vector2.zero; // Stop movement for attack
 
@@ -151,15 +157,11 @@ public class Enemy : MonoBehaviour
                         anim.SetTrigger("attack");
                         
                         Vector2 _direction = (player.transform.position - transform.position).normalized;
-                        Hit(_direction, player);
+                        player.GetComponent<PlayerMovement>().Hurt(damagePower, _direction);
                     }
                 }
             }
         }
     }
 
-    protected virtual void Hit(Vector2 _attackDirection, PlayerMovement _player)
-    {
-        _player.Hurt(damagePower, _attackDirection);
-    }
 }

@@ -4,99 +4,140 @@ using UnityEngine;
 
 public class Minotaur : Enemy
 {
-    // ATAQUES
-    // ATAQUE SALTO
-    // ATAQUE DASH
-    // ATAQUE SPIN
     [Header("Jump")]
     public Transform jumpAreaTransform;
     public Vector2 jumpAreaVector = new Vector2(0.5f, 0.5f);
     public float jumpForce = 10f;
-    public float jumpTime = 0.5f;
     public float jumpCoolDown = 2f;
     private float sinceJump = 0;
-    private float gravity = 5;
 
     [Header("Dashing")]
     public Transform dashAreaTransform;
     public Vector2 dashAreaVector = new Vector2(1.5f, 1.5f);
     private float dashSpeed = 50f;
-    private float dashTime = 0.1f;
+    private float dashTime = 0.4f;
     private float dashCooldown = 5f;
     private float sinceDash = 0f;
 
+    private bool playerInAttackArea, playerInDashArea, isAttacking;
+    private float originalGravityScale;
 
     protected override void Start()
     {
         base.Start();
-        StartCoroutine(prueba());
+        originalGravityScale = rb.gravityScale;  // Guardamos la gravedad original
     }
 
     protected override void Update()
     {
         base.Update();
+            
+        
         sinceJump += Time.deltaTime;
-        if (sinceAttack >= attackCooldown)
+
+        // Actualizar áreas de ataque
+        playerInDashArea = Physics2D.OverlapBoxAll(dashAreaTransform.position, dashAreaVector, 0, LayerMask.GetMask("Player")).Length > 0;
+        playerInAttackArea = Physics2D.OverlapBoxAll(attackAreaTransform.position, attackAreaVector, 0, LayerMask.GetMask("Player")).Length > 0;
+
+        // Verificar si se puede atacar
+        if (sinceAttack >= attackCooldown && !isAttacking)
         {
-            Attack(); // Call the attack method if the cooldown time has expired
+            Attack(); // Llamar al método Attack si no está atacando
         }
     }
 
     public override void OnDrawGizmos()
     {
         base.OnDrawGizmos();
-        // change color to green
         Gizmos.color = Color.green;
         Gizmos.DrawWireCube(jumpAreaTransform.position, jumpAreaVector);
         Gizmos.DrawWireCube(dashAreaTransform.position, dashAreaVector);
     }
 
-    IEnumerator prueba()
+    protected override void Flip()
     {
-        yield return new WaitForSeconds(5);
-        Debug.Log("Salto");
-        JumpAttack();
-        yield return new WaitForSeconds(5);
-        Debug.Log("Dash");
-        DashAttack();
-        yield return new WaitForSeconds(5);
-        Debug.Log("Normal");
-        NormalAttack();
-        yield return new WaitForSeconds(5);
+        Vector3 v3 = transform.localScale;
+
+        if (objective.position.x > transform.position.x && v3.x < 0)
+        {
+            v3.x *= -1;  // Mirar hacia la derecha
+        }
+        else if (objective.position.x < transform.position.x && v3.x > 0)
+        {
+            v3.x *= -1;  // Mirar hacia la izquierda
+        }
+
+        transform.localScale = v3;
     }
-
-
 
     private void JumpAttack()
     {
-
-        anim.SetTrigger("jump");
-        sinceJump = 0;
-        rb.velocity = Vector2.zero;
-        Vector2 direction = (objective.transform.position - transform.position).normalized;
-        rb.AddForce(direction * jumpForce, ForceMode2D.Impulse);
+        if (sinceJump >= jumpCoolDown && !isAttacking)
+        {
+            isAttacking = true; // Marcar como atacando
+            anim.SetTrigger("jump");
+            sinceJump = 0;
+            rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+            
+            if (Physics2D.OverlapBoxAll(jumpAreaTransform.position, jumpAreaVector, 0, LayerMask.GetMask("Player")).Length > 0) {
+                Vector2 _direction = (objective.transform.position - transform.position).normalized;
+                objective.GetComponent<PlayerMovement>().Hurt(damagePower, _direction);
+            }
+            StartCoroutine(attackCooldownIE());
+        }       
     }
 
     private void DashAttack()
     {
-        anim.SetTrigger("charge");
-        StartCoroutine(Dash());
+        if (playerInDashArea && !isAttacking)
+        {
+            isAttacking = true; // Marcar como atacando
+            StartCoroutine(Dash());
+        }
     }
 
     private IEnumerator Dash()
     {
-        
-        sinceDash = 0f; 
-        rb.gravityScale = 0;
+        anim.SetTrigger("charge");
+        speed = 0; // Detener la velocidad para preparar el dash
+
+        yield return new WaitForSeconds(0.5f);
+        speed = 8f;
+        rb.gravityScale = originalGravityScale * 0.2f; // Reducir la gravedad para el dash
         Vector2 dashDirection = (objective.transform.position - transform.position).normalized;
-        rb.velocity = dashDirection * dashSpeed; 
+        rb.velocity = dashDirection * dashSpeed;
+
         yield return new WaitForSeconds(dashTime);
-        rb.gravityScale = gravity; 
+
+        if (Physics2D.OverlapBoxAll(attackAreaTransform.position, attackAreaVector, 0, LayerMask.GetMask("Player")).Length > 0) {
+            Vector2 _direction = (objective.transform.position - transform.position).normalized;
+            objective.GetComponent<PlayerMovement>().Hurt(damagePower, _direction);
+        }
+
+        rb.gravityScale = originalGravityScale; // Restaurar gravedad al valor original
+        StartCoroutine(attackCooldownIE());
     }
 
     private void NormalAttack()
     {
-        anim.SetTrigger("attack");
+        if (playerInAttackArea && !isAttacking) 
+        {
+            isAttacking = true; // Marcar como atacando
+            anim.SetTrigger("spin");
+
+            if (Physics2D.OverlapBoxAll(attackAreaTransform.position, attackAreaVector, 0, LayerMask.GetMask("Player")).Length > 0) {
+                Vector2 _direction = (objective.transform.position - transform.position).normalized;
+                objective.GetComponent<PlayerMovement>().Hurt(damagePower, _direction);
+            }
+            StartCoroutine(attackCooldownIE());
+        }
+    }
+
+    private IEnumerator attackCooldownIE()
+    {
+        yield return new WaitForSeconds(3f); // Esperar antes de permitir otro ataque
+        isAttacking = false; // Permitir nuevos ataques
+        sinceAttack = 0f; // Reiniciar el contador de ataque
     }
 
     private int Choose(float percentageA, float percentageB, float percentageC)
@@ -118,29 +159,12 @@ public class Minotaur : Enemy
         }
     }
 
-
     protected override void Attack()
     {
-        sinceAttack = 0f; // Reset attack cooldown timer
-        int attackType = 0;
-
-        // Asegúrate de que haya un jugador en el área de dash
-        bool playerInDashArea = Physics2D.OverlapBoxAll(dashAreaTransform.position, dashAreaVector, 0, LayerMask.GetMask("Player")).Length > 0;
-        bool playerInAttackArea = Physics2D.OverlapBoxAll(attackAreaTransform.position, attackAreaVector, 0, LayerMask.GetMask("Player")).Length > 0;
-
-        if (playerInDashArea && sinceDash >= dashCooldown)
-        {
-            attackType = Choose(0, 0, 40);
-        }
-        else if (playerInAttackArea)
-        {
-            attackType = Choose(40, 40, 20); 
-        }
+        int attackType = Choose(40, 40, 20); // Elegir tipo de ataque
 
         switch (attackType)
         {
-            case 0:
-                break;
             case 1:
                 NormalAttack();
                 break;
@@ -155,6 +179,4 @@ public class Minotaur : Enemy
                 break;
         }
     }
-
-
 }
