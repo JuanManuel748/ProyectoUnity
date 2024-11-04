@@ -33,7 +33,7 @@ public class Puerta : MonoBehaviour
 
     protected void AbrirPuerta()
     {
-        anim.SetTrigger("open");
+        anim.SetTrigger("Open");
         // Aquí puedes agregar animación de abrir puerta si es necesario
         SceneManager.LoadScene("GameOver");
     }

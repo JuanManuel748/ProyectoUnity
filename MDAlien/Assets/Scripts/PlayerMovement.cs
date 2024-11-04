@@ -338,13 +338,17 @@ public class PlayerMovement : MonoBehaviour
         anim.SetTrigger("death");
         Destroy(gameObject, anim.GetCurrentAnimatorStateInfo(0).length);
     }
-
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.gameObject.CompareTag("Door") && tieneLlave && Input.GetKeyDown(KeyCode.E))
         {
-            tieneLlave = true;
             Destroy(collision.gameObject);
+        }
+
+        if (collision.gameObject.CompareTag("Key"))
+        {
+            tieneLlave = true;
+            Destroy(collision.gameObject); // Destruir la llave al recogerla
         }
     }
 
