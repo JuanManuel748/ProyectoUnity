@@ -3,20 +3,19 @@ using UnityEngine.SceneManagement;
 
 public class Puerta : MonoBehaviour
 {
-    public bool tieneLlave;
     private bool jugadorEnRango;
     private Animator anim;
+    private PlayerMovement playerMovement;
 
     void Start()
     {
         anim = GetComponent<Animator>();
-        tieneLlave = false;
         jugadorEnRango = false;
     }
 
     void Update()
     {
-        if (jugadorEnRango && Input.GetKeyDown(KeyCode.E) && tieneLlave)
+        if (jugadorEnRango && Input.GetKeyDown(KeyCode.W) && playerMovement != null && playerMovement.tieneLlave)
         {
             AbrirPuerta();
         }
@@ -27,21 +26,15 @@ public class Puerta : MonoBehaviour
         if (collision.CompareTag("Player"))
         {
             jugadorEnRango = true;
+            playerMovement = collision.GetComponent<PlayerMovement>();
         }
     }
 
-    private void OnTriggerExit2D(Collider2D collision)
-    {
-        if (collision.CompareTag("Player"))
-        {
-            jugadorEnRango = false;
-        }
-    }
 
-    private void AbrirPuerta()
+    protected void AbrirPuerta()
     {
         anim.SetTrigger("open");
         // Aquí puedes agregar animación de abrir puerta si es necesario
-        SceneManager.LoadScene("Game Over");
+        SceneManager.LoadScene("GameOver");
     }
 }

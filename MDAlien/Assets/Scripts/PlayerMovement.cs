@@ -341,7 +341,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.gameObject.CompareTag("Key"))
+        if (collision.gameObject.CompareTag("Door") && tieneLlave && Input.GetKeyDown(KeyCode.E))
         {
             tieneLlave = true;
             Destroy(collision.gameObject);
@@ -352,5 +352,6 @@ public class PlayerMovement : MonoBehaviour
     {
         return tieneLlave;
     }
+
 
 }
