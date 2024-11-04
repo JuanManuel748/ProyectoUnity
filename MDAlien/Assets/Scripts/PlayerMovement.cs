@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -336,6 +337,8 @@ public class PlayerMovement : MonoBehaviour
     private void Die()
     {
         anim.SetTrigger("death");
+        // cambiar a la escena Game Over death
+        SceneManager.LoadScene("GameOverDead");
         Destroy(gameObject, anim.GetCurrentAnimatorStateInfo(0).length);
     }
     private void OnTriggerEnter2D(Collider2D collision)

@@ -1,23 +1,26 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Collections;
 
 public class Puerta : MonoBehaviour
 {
-    private bool jugadorEnRango;
+    private bool jugadorEnRango = false;
     private Animator anim;
     private PlayerMovement playerMovement;
+
+    [SerializeField] private string nextSceneName = "GameOver"; // Name of the next scene
+    [SerializeField] private float doorOpenDelay = 1f; // Delay for the door animation
 
     void Start()
     {
         anim = GetComponent<Animator>();
-        jugadorEnRango = false;
     }
 
     void Update()
     {
         if (jugadorEnRango && Input.GetKeyDown(KeyCode.W) && playerMovement != null && playerMovement.tieneLlave)
         {
-            AbrirPuerta();
+            StartCoroutine(AbrirPuerta());
         }
     }
 
@@ -30,11 +33,21 @@ public class Puerta : MonoBehaviour
         }
     }
 
+    private void OnTriggerExit2D(Collider2D collision)
+    {
+        if (collision.CompareTag("Player"))
+        {
+            jugadorEnRango = false;
+            playerMovement = null;
+        }
+    }
 
-    protected void AbrirPuerta()
+    private IEnumerator AbrirPuerta()
     {
         anim.SetTrigger("Open");
-        // Aquí puedes agregar animación de abrir puerta si es necesario
-        SceneManager.LoadScene("GameOver");
+
+        yield return new WaitForSeconds(doorOpenDelay);
+
+        SceneManager.LoadScene(nextSceneName);
     }
 }

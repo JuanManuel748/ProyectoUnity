@@ -19,18 +19,43 @@ public class Minotaur : Enemy
     private float dashCooldown = 5f;
     private float sinceDash = 0f;
 
-    private bool playerInAttackArea, playerInDashArea, isAttacking;
+    private bool playerInAttackArea, playerInDashArea, isAttacking, isDashing;
     private float originalGravityScale;
 
     protected override void Start()
     {
         base.Start();
         originalGravityScale = rb.gravityScale;  // Guardamos la gravedad original
+        isDashing = false;
+        isAttacking = false;
     }
 
     protected override void Update()
     {
-        base.Update();
+        sinceAttack += Time.deltaTime;
+        if (objective == null) return; // Null check for objective
+
+        absoluteDistanceX = Mathf.Abs(objective.position.x - transform.position.x);
+        absoluteDistanceY = Mathf.Abs(objective.position.y - transform.position.y);
+
+        follow = (absoluteDistanceX < rangeX) && (absoluteDistanceY < rangeY);
+        
+        
+
+        if (follow && !isDashing)
+        {
+            Follow();
+            Flip();
+            
+        }
+        if (!follow)
+        {
+            anim.SetBool("running", false);
+        }
+        if (sinceAttack >= attackCooldown && !isAttacking)
+            {
+                Attack();
+            }
             
         
         sinceJump += Time.deltaTime;
@@ -92,6 +117,7 @@ public class Minotaur : Enemy
         if (playerInDashArea && !isAttacking)
         {
             isAttacking = true; // Marcar como atacando
+            isDashing = true;
             StartCoroutine(Dash());
         }
     }
@@ -120,8 +146,7 @@ public class Minotaur : Enemy
 
     private void NormalAttack()
     {
-        if (playerInAttackArea && !isAttacking) 
-        {
+        
             isAttacking = true; // Marcar como atacando
             anim.SetTrigger("spin");
 
@@ -130,12 +155,14 @@ public class Minotaur : Enemy
                 objective.GetComponent<PlayerMovement>().Hurt(damagePower, _direction);
             }
             StartCoroutine(attackCooldownIE());
-        }
+        
     }
 
     private IEnumerator attackCooldownIE()
     {
-        yield return new WaitForSeconds(3f); // Esperar antes de permitir otro ataque
+        yield return new WaitForSeconds(1f); // Esperar antes de permitir otro ataque
+        isDashing = false;
+        yield return new WaitForSeconds(2f); // Esperar antes de permitir otro ataque
         isAttacking = false; // Permitir nuevos ataques
         sinceAttack = 0f; // Reiniciar el contador de ataque
     }
